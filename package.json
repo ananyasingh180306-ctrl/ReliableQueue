@@ -1,0 +1,26 @@
+{
+  "name": "reliable-job-queue",
+  "version": "1.0.0",
+  "description": "Production-grade crash-resilient background job queue engine with dead-letter recovery and idempotency",
+  "type": "module",
+  "main": "src/queue.js",
+  "bin": {
+    "job-queue": "./src/cli.js"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "worker": "node src/cli.js worker",
+    "cli": "node src/cli.js",
+    "test": "node --test test/*.test.js"
+  },
+  "keywords": [
+    "job-queue",
+    "background-jobs",
+    "dead-letter-queue",
+    "idempotency",
+    "sqlite",
+    "distributed-systems"
+  ],
+  "author": "",
+  "license": "MIT"
+}

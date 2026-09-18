@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Reliable Job Queue Engine Dashboard</title>
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="navbar">
+      <div class="brand">
+        <div class="logo-icon">⚡</div>
+        <div>
+          <h1>Reliable Job Queue</h1>
+          <span class="sub-title">Distributed Engine with Dead-Letter Recovery & Idempotency</span>
+        </div>
+      </div>
+      <div class="header-right">
+        <div class="connection-status" id="connectionStatus">
+          <span class="status-dot"></span> <span id="statusText">Connecting...</span>
+        </div>
+        <button class="btn btn-outline" id="refreshBtn">↻ Refresh</button>
+      </div>
+    </header>
+
+    <!-- Metrics Ribbon -->
+    <div class="metrics-grid">
+      <div class="metric-card card-queued">
+        <div class="metric-title">Queued</div>
+        <div class="metric-value" id="statQueued">0</div>
+        <div class="metric-desc">Pending dispatch or delayed</div>
+      </div>
+      <div class="metric-card card-leased">
+        <div class="metric-title">In-Flight (Leased)</div>
+        <div class="metric-value" id="statLeased">0</div>
+        <div class="metric-desc">Actively executing under lease</div>
+      </div>
+      <div class="metric-card card-completed">
+        <div class="metric-title">Completed</div>
+        <div class="metric-value" id="statCompleted">0</div>
+        <div class="metric-desc">Successfully executed</div>
+      </div>
+      <div class="metric-card card-dlq">
+        <div class="metric-header">
+          <span class="metric-title">Dead-Letter Queue</span>
+          <button class="btn btn-xs btn-replay-all" id="btnReplayAll" title="Replay all dead letters">Replay All</button>
+        </div>
+        <div class="metric-value" id="statDlq">0</div>
+        <div class="metric-desc">Exceeded maximum retries</div>
+      </div>
+    </div>
+
+    <!-- Quick Demo Scenario Launcher -->
+    <div class="section-container">
+      <h2 class="section-heading">Interactive Architectural Demos</h2>
+      <p class="section-sub">Test real distributed edge cases: crash recovery, idempotency without duplicate side effects, backoffs, and DAG dependencies.</p>
+      
+      <div class="demo-buttons-grid">
+        <div class="demo-action-box">
+          <div class="demo-box-icon">💳</div>
+          <div class="demo-box-content">
+            <h4>Idempotent Crash Simulation</h4>
+            <p>Runs a 3-step payment order. Worker crashes mid-flight after charging credit card. Retried job detects step 1 is done and <strong>never double-charges</strong>!</p>
+          </div>
+          <button class="btn btn-primary" id="btnDemoCrash">Simulate Crash & Recover</button>
+        </div>
+
+        <div class="demo-action-box">
+          <div class="demo-box-icon">🔁</div>
+          <div class="demo-box-content">
+            <h4>Exponential Backoff & DLQ</h4>
+            <p>Enqueues a task that repeatedly fails. Observe automatic exponential backoff delays $(1\text{s} \to 2\text{s} \to 4\text{s})$ before moving to the Dead-Letter Queue.</p>
+          </div>
+          <button class="btn btn-warning" id="btnDemoDlq">Trigger DLQ Backoff</button>
+        </div>
+
+        <div class="demo-action-box">
+          <div class="demo-box-icon">🔗</div>
+          <div class="demo-box-content">
+            <h4>DAG Job Dependencies</h4>
+            <p>Enqueues Child Job B that strictly depends on Parent Job A. Worker will not touch Job B until Job A succeeds.</p>
+          </div>
+          <button class="btn btn-info" id="btnDemoDag">Enqueue Dependent DAG</button>
+        </div>
+
+        <div class="demo-action-box">
+          <div class="demo-box-icon">⚡</div>
+          <div class="demo-box-content">
+            <h4>Priority & Delayed Jobs</h4>
+            <p>Dispatches high-priority urgent job vs 5-second delayed background job to test scheduler ordering.</p>
+          </div>
+          <button class="btn btn-secondary" id="btnDemoPriority">Test Priority & Delay</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main Workspace: Event Stream + Job List -->
+    <div class="main-content-split">
+      <!-- Live Real-Time Feed -->
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Live Engine Event Stream (SSE)</h3>
+          <span class="badge live-badge">● LIVE</span>
+        </div>
+        <div class="feed-container" id="eventFeed">
+          <div class="feed-item feed-info">
+            <span class="feed-time">Now</span>
+            <span class="feed-msg">Connected to SQLite WAL engine. Waiting for events...</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Recent & DLQ Jobs -->
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Jobs Ledger</h3>
+          <div class="filter-pills">
+            <button class="pill active" data-filter="all">All</button>
+            <button class="pill" data-filter="leased">In-Flight</button>
+            <button class="pill" data-filter="dead_letter">Dead-Letter</button>
+            <button class="pill" data-filter="completed">Completed</button>
+          </div>
+        </div>
+        <div class="table-responsive">
+          <table class="jobs-table">
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Priority</th>
+                <th>Attempts</th>
+                <th>Timing</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="jobsTableBody">
+              <tr>
+                <td colspan="7" class="empty-state">Loading jobs...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Job Details Modal -->
+    <div class="modal-backdrop" id="jobModal">
+      <div class="modal-card">
+        <div class="modal-header">
+          <h3 id="modalJobTitle">Job Details</h3>
+          <button class="btn-close" id="modalCloseBtn">✕</button>
+        </div>
+        <div class="modal-body" id="modalJobContent">
+          <!-- Populated dynamically -->
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
