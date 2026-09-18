@@ -1,5 +1,8 @@
 # Reliable Job Queue with Dead-Letter Recovery
 
+[![Live Demo](https://img.shields.io/badge/Live%20Demo-Render-brightgreen?style=for-the-badge&logo=render)](https://reliablequeue.onrender.com/)
+> 🌐 **Live Web Dashboard:** [https://reliablequeue.onrender.com/](https://reliablequeue.onrender.com/)
+
 A production-grade, crash-resilient background job queue engine built in **Node.js** with zero external native dependencies, utilizing Node's built-in **`node:sqlite`** in **Write-Ahead Logging (WAL)** mode for ACID durability.
 
 ---
