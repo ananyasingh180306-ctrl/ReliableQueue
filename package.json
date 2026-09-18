@@ -11,7 +11,8 @@
     "start": "node src/server.js",
     "worker": "node src/cli.js worker",
     "cli": "node src/cli.js",
-    "test": "node --test test/*.test.js"
+    "test": "node --test test/*.test.js",
+    "bench": "node scripts/benchmark.js"
   },
   "keywords": [
     "job-queue",
